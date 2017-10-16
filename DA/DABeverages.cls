@@ -22,7 +22,20 @@ CLASS DA.DABeverages INHERITS BaseDataAccess:
         def var hDS as handle.
         hds = dataset dsBeverages:handle.
         define data-source src for Beverages.
-        super:fetchData(input-output dataset-handle hDS, input data-source src:handle).
+        
+        super:attachDataSource(input-output dataset-handle hDS by-reference, input data-source src:handle).
+        super:fetchData(input-output dataset-handle hDS by-reference).
+        super:detachDataSource(input-output dataset-handle hDS by-reference).
+    end method.
+    
+    method public void storeData(input dataset dsBeverages):
+        def var hdsBev as handle no-undo.
+        hdsBev = dataset dsBEverages:handle.
+        define data-source src for Beverages.
+        
+        super:attachDataSource(input-output dataset-handle hdsBev by-reference, input data-source src:handle).
+        super:storeData(input dataset-handle hdsBev by-reference).
+        super:detachDataSource(input-output dataset-handle hdsBev by-reference).
     end method.
     
 END CLASS.

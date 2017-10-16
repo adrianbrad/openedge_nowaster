@@ -24,9 +24,22 @@ CLASS BE.BEBeverages:
     end constructor.
     
     method public void fetchData():
-        DA:fetchData(input-output dataset dsBeverages by-reference).
-        for each ttBeverages:
-            disp ttBeverages.Name.
-        end.
+        DA:fetchData(input-output dataset dsBeverages by-reference).       
+        temp-table ttBeverages:TRACKING-CHANGES = true.
+    end method.
+    
+    method public void storeData():        
+        find first ttBeverages.
+        ttBeverages.name = "updated".
+        find next ttBeverages.
+        ttBeverages.name = "update 2".
+            
+/*        def var hdsBev as handle no-undo.   */
+/*        hdsBev = dataset dsBEverages:handle.*/
+        DA:storeData(input dataset dsBeverages by-reference).
+    end method.
+    
+    method public void updateBeverage():
+    
     end method.
 END CLASS.
