@@ -20,6 +20,6 @@ CLASS BT.BTGetMostAlcoholUnitsWithMoney:
     
     constructor public BTGetMostALcoholUnitsWithMoney():
         BEBev = new BE.BEBeverages().
-        disp BEBev:getDShandle()::ttBeverages::Name.
+/*        disp BEBev:getDShandle()::ttBeverages::Name.*/
     end constructor.
 END CLASS.

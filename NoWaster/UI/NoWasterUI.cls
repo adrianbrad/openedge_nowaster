@@ -1,4 +1,4 @@
- 
+
  /*------------------------------------------------------------------------
     File        : NoWasterUI
     Purpose     : 
@@ -17,66 +17,219 @@ BLOCK-LEVEL ON ERROR UNDO, THROW.
 CLASS UI.NoWasterUI INHERITS Form: 
     
     DEFINE PRIVATE VARIABLE button1 AS System.Windows.Forms.Button NO-UNDO.
-    DEFINE PRIVATE VARIABLE checkBox3 AS System.Windows.Forms.CheckBox NO-UNDO.
-    DEFINE PRIVATE VARIABLE checkBox2 AS System.Windows.Forms.CheckBox NO-UNDO.
-    DEFINE PRIVATE VARIABLE checkBox1 AS System.Windows.Forms.CheckBox NO-UNDO.
+    DEFINE PRIVATE VARIABLE button2 AS System.Windows.Forms.Button NO-UNDO.
+    DEFINE PRIVATE VARIABLE button3 AS System.Windows.Forms.Button NO-UNDO.
+    DEFINE PRIVATE VARIABLE checkedListBox1 AS System.Windows.Forms.CheckedListBox NO-UNDO.
     DEFINE PRIVATE VARIABLE components AS System.ComponentModel.IContainer NO-UNDO.
     DEFINE PRIVATE VARIABLE label2 AS System.Windows.Forms.Label NO-UNDO.
-    DEFINE PRIVATE VARIABLE textBox1 AS System.Windows.Forms.TextBox NO-UNDO.
+    DEFINE PRIVATE VARIABLE listBox1 AS System.Windows.Forms.ListBox NO-UNDO.
+    DEFINE PRIVATE VARIABLE listBox2 AS System.Windows.Forms.ListBox NO-UNDO.
+    DEFINE PRIVATE VARIABLE numericUpDown1 AS System.Windows.Forms.NumericUpDown NO-UNDO.
     DEFINE PRIVATE VARIABLE label1 AS System.Windows.Forms.Label NO-UNDO.
-
+    def private var locClick as logical no-undo initial false.
         
     CONSTRUCTOR PUBLIC NoWasterUI (  ):
         
         
         SUPER().
         InitializeComponent().
+        initCheckBox().
         THIS-OBJECT:ComponentsCollection:ADD(THIS-OBJECT:components).
         CATCH e AS Progress.Lang.Error:
             UNDO, THROW e.
         END CATCH.
-
     END CONSTRUCTOR.
+    
+	/*------------------------------------------------------------------------------
+	 Purpose:
+	 Notes:
+	------------------------------------------------------------------------------*/
+	@VisualDesigner.
+	METHOD PRIVATE VOID button2_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+		locClick = true.
+		
+		def var BELoc as BE.BElocations no-undo.
+		BEloc = new BE.BELocations().
+		BEloc:fetchData().
+		def var hDSloc as handle no-undo.
+		hDSloc = BEloc:getDShandle().
+		
+		listBox1:Items:Clear().
+		populateList(input listBox1, input hDSloc:get-buffer-handle(1)).
+	END METHOD.
+	
+	/*------------------------------------------------------------------------------
+	 Purpose:
+	 Notes:
+	------------------------------------------------------------------------------*/
+	@VisualDesigner.
+	METHOD PRIVATE VOID button3_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+		locClick = false.
+		
+		def var beBEv as BE.BEBeverages.
+        beBEv = new BE.BEBeverages().
+        beBEv:fetchData(?).
+        def var hDSloc as handle no-undo.
+        hDSloc = beBEv:getDShandle().
+        
+        listBox1:Items:Clear().
+        populateList(input listBox1, input hDSloc:get-buffer-handle(1)).
 
+	END METHOD.
+
+	/*------------------------------------------------------------------------------
+	 Purpose:
+	 Notes:
+	------------------------------------------------------------------------------*/
+	@VisualDesigner.
+	METHOD PRIVATE VOID listBox1_SelectedIndexChanged( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+		if locClick = yes then
+		  showMenu(cast(listBox1:SelectedItem, UI.ListBoxData):id).
+	   else 
+	      showBeverageInformation(cast(listBox1:SelectedItem, UI.ListBoxData):id).
+    end method.
+    
+    method private void showBeverageInformation(input id as Int):
+        listbox2:Items:clear().
+        def var beBev as BE.BEBeverages no-undo.
+        beBev = new BE.BEBeverages().
+        beBev:fetchData("where BeverageID = " + string(id)).
+        
+        DEFINE VARIABLE qh AS HANDLE.
+        CREATE QUERY qh.
+        qh:SET-BUFFERS(beBev:getDShandle():get-buffer-handle(1)).
+        qh:QUERY-PREPARE("FOR EACH "+ string(beBev:getDShandle():get-buffer-handle(1):Name)).
+        qh:QUERY-OPEN.
+
+        qh:GEt-first().
+            listbox2:Items:Add(beBev:getDShandle():get-buffer-handle(1)::Size + " " + beBev:getDShandle():get-buffer-handle(1)::Alcohol).
+        qh:QUERY-CLOSE().
+        DELETE OBJECT qh.
+    end method.
+    
+    method private void showMenu(input id as int).
+        listBox2:Items:Clear().
+        def var beMenuForLoc as BE.BEMenuForLocation no-undo.
+        def var bufferHandle as handle no-undo.
+        beMenuForLoc = new BE.BEMenuForLocation().
+        beMenuForLoc:fetchData().
+        
+        DEFINE VARIABLE qh AS HANDLE.
+        def var hTopBuffer as handle.
+        
+        bufferHandle =  beMenuForLoc:getDsHandle():GET-BUFFER-HANDLE (3).
+        CREATE QUERY qh.
+        qh:SET-BUFFERS(bufferHandle).
+        qh:QUERY-PREPARE("FOR EACH " + bufferHandle:Name + " where LocationID = " + string(id)).
+/*        qh:QUERY-PREPARE("FOR EACH " + bufferHandle:Name).*/
+        qh:QUERY-OPEN.
+         
+        REPEAT:
+            qh:GET-NEXT().
+            IF qh:QUERY-OFF-END THEN LEAVE.
+            def var listBoxData as UI.ListBoxData no-undo.
+            listBoxData = new UI.ListBoxData().
+            listBoxData:id = bufferHandle:BUFFER-FIELD (2):buffer-value.
+            
+            listBoxData:name = beMenuForLoc:getBeverageName(bufferHandle:BUFFER-FIELD (2):buffer-value) + " / " + bufferHandle::Price.
+            listBox2:Items:Add(listBoxData).
+            listBox2:DisplayMember = "name".
+            END.
+        
+        qh:QUERY-CLOSE().
+        DELETE OBJECT qh.
+	END METHOD.
+
+	method private void populateList(input listBox as System.Windows.Forms.ListBox, input bufferHandle as handle ):
+	    DEFINE VARIABLE qh AS HANDLE.
+        def var hTopBuffer as handle.
+        
+/*        hTopBuffer = hDS:GET-BUFFER-HANDLE (1).*/
+        
+        CREATE QUERY qh.
+        qh:SET-BUFFERS(bufferHandle).
+        qh:QUERY-PREPARE("FOR EACH " + bufferHandle:Name).
+        qh:QUERY-OPEN.
+         
+        REPEAT:
+            qh:GET-NEXT().
+            IF qh:QUERY-OFF-END THEN LEAVE.
+            def var listBoxData as UI.ListBoxData no-undo.
+            listBoxData = new UI.ListBoxData().
+            listBoxData:id = bufferHandle:BUFFER-FIELD (1):buffer-value.
+            listBoxData:name = bufferHandle:BUFFER-FIELD (2):buffer-value.
+            
+            listBox1:Items:Add(listBoxData).
+            listBox1:DisplayMember = "name".
+            END.
+        
+        qh:QUERY-CLOSE().
+        DELETE OBJECT qh.
+	end method.
+
+    method private void initCheckBox():
+        def var calcResultS as system.object.               
+        def var bedt as BE.BEDrinkType no-undo.
+        bedt = new BE.BedrinkType().
+        bedt:fetchData(?).
+        def var tbBuf as handle.
+        tbBuf = bedt:getDShandle()::ttDrinkType:handle.
+        DEFINE VARIABLE qh AS HANDLE.
+        
+        CREATE QUERY qh.
+        qh:SET-BUFFERS(tbBuf).
+        qh:QUERY-PREPARE("FOR EACH ttDrinkType").
+        qh:QUERY-OPEN.
+        
+        def var listBoxData as UI.ListBoxData.
+        REPEAT:
+            qh:GET-NEXT().
+            IF qh:QUERY-OFF-END THEN LEAVE.
+            listBoxData = new UI.ListBoxData().
+            listBoxData:id = tbBuf::TypeNum.
+            listBoxData:name = tbBuf::TypeName.
+            checkedListBox1:Items:Add(listBoxData).
+            checkedListBox1:DisplayMember = "name".
+        END.
+        
+        qh:QUERY-CLOSE().
+        DELETE OBJECT qh.
+        
+    end method.
 	/*------------------------------------------------------------------------------
 	 Purpose:
 	 Notes:
 	------------------------------------------------------------------------------*/
 	@VisualDesigner.
 	METHOD PRIVATE VOID button1_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
-		
-		RETURN.
+        def var be4 as BE.BEMenuForLocation.
+    
+        be4 = new BE.BEMenuForLocation().
+        def var i as int no-undo.
+        def var availableDrinks as char no-undo.
+        
+        do i=0 to checkedListBox1:CheckedItems:Count - 1:
+            if availableDrinks = "" then
+            availableDrinks = string(cast(checkedListBox1:CheckedItems[i], UI.ListBoxData):id).
+            else
+            availableDrinks = availableDrinks + "," + string(cast(checkedListBox1:CheckedItems[i], UI.ListBoxData):id).
+        end.
+        
+        be4:getMostAlcoholUnitsWithAvailableMoney(NumericUpDown1:Value, availableDrinks).
 
 	END METHOD.
+
+
+
+
+
 
 	/*------------------------------------------------------------------------------
 	 Purpose:
 	 Notes:
 	------------------------------------------------------------------------------*/
 	@VisualDesigner.
-	METHOD PRIVATE VOID checkBox1_CheckedChanged( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
-		
-		RETURN.
-
-	END METHOD.
-
-	/*------------------------------------------------------------------------------
-	 Purpose:
-	 Notes:
-	------------------------------------------------------------------------------*/
-	@VisualDesigner.
-	METHOD PRIVATE VOID checkBox2_CheckedChanged( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
-		
-		RETURN.
-
-	END METHOD.
-
-	/*------------------------------------------------------------------------------
-	 Purpose:
-	 Notes:
-	------------------------------------------------------------------------------*/
-	@VisualDesigner.
-	METHOD PRIVATE VOID checkBox3_CheckedChanged( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+	METHOD PRIVATE VOID checkedListBox1_SelectedIndexChanged( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
 		
 		RETURN.
 
@@ -90,22 +243,17 @@ CLASS UI.NoWasterUI INHERITS Form:
         Visual Designer to avoid any incompatible modifications.
         
         Modifying the contents of this method using a code editor will invalidate any support for this file. */
-        THIS-OBJECT:textBox1 = NEW System.Windows.Forms.TextBox().
         THIS-OBJECT:label1 = NEW System.Windows.Forms.Label().
         THIS-OBJECT:button1 = NEW System.Windows.Forms.Button().
         THIS-OBJECT:label2 = NEW System.Windows.Forms.Label().
-        THIS-OBJECT:checkBox1 = NEW System.Windows.Forms.CheckBox().
-        THIS-OBJECT:checkBox2 = NEW System.Windows.Forms.CheckBox().
-        THIS-OBJECT:checkBox3 = NEW System.Windows.Forms.CheckBox().
+        THIS-OBJECT:checkedListBox1 = NEW System.Windows.Forms.CheckedListBox().
+        THIS-OBJECT:listBox1 = NEW System.Windows.Forms.ListBox().
+        THIS-OBJECT:button2 = NEW System.Windows.Forms.Button().
+        THIS-OBJECT:button3 = NEW System.Windows.Forms.Button().
+        THIS-OBJECT:listBox2 = NEW System.Windows.Forms.ListBox().
+        THIS-OBJECT:numericUpDown1 = NEW System.Windows.Forms.NumericUpDown().
+        CAST(THIS-OBJECT:numericUpDown1, System.ComponentModel.ISupportInitialize):BeginInit().
         THIS-OBJECT:SuspendLayout().
-        /*  */
-        /* textBox1 */
-        /*  */
-        THIS-OBJECT:textBox1:Location = NEW System.Drawing.Point(85, 29).
-        THIS-OBJECT:textBox1:Name = "textBox1".
-        THIS-OBJECT:textBox1:Size = NEW System.Drawing.Size(100, 20).
-        THIS-OBJECT:textBox1:TabIndex = 0.
-        THIS-OBJECT:textBox1:TextChanged:Subscribe(THIS-OBJECT:textBox1_TextChanged).
         /*  */
         /* label1 */
         /*  */
@@ -119,9 +267,9 @@ CLASS UI.NoWasterUI INHERITS Form:
         /*  */
         /* button1 */
         /*  */
-        THIS-OBJECT:button1:Location = NEW System.Drawing.Point(178, 139).
+        THIS-OBJECT:button1:Location = NEW System.Drawing.Point(205, 26).
         THIS-OBJECT:button1:Name = "button1".
-        THIS-OBJECT:button1:Size = NEW System.Drawing.Size(89, 43).
+        THIS-OBJECT:button1:Size = NEW System.Drawing.Size(109, 75).
         THIS-OBJECT:button1:TabIndex = 2.
         THIS-OBJECT:button1:Text = "NoWasterize Money".
         THIS-OBJECT:button1:UseCompatibleTextRendering = TRUE.
@@ -130,7 +278,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /*  */
         /* label2 */
         /*  */
-        THIS-OBJECT:label2:Location = NEW System.Drawing.Point(232, 26).
+        THIS-OBJECT:label2:Location = NEW System.Drawing.Point(356, 9).
         THIS-OBJECT:label2:Name = "label2".
         THIS-OBJECT:label2:Size = NEW System.Drawing.Size(100, 23).
         THIS-OBJECT:label2:TabIndex = 3.
@@ -138,57 +286,85 @@ CLASS UI.NoWasterUI INHERITS Form:
         THIS-OBJECT:label2:UseCompatibleTextRendering = TRUE.
         THIS-OBJECT:label2:Click:Subscribe(THIS-OBJECT:label2_Click).
         /*  */
-        /* checkBox1 */
+        /* checkedListBox1 */
         /*  */
-        THIS-OBJECT:checkBox1:Location = NEW System.Drawing.Point(338, 21).
-        THIS-OBJECT:checkBox1:Name = "checkBox1".
-        THIS-OBJECT:checkBox1:Size = NEW System.Drawing.Size(104, 24).
-        THIS-OBJECT:checkBox1:TabIndex = 4.
-        THIS-OBJECT:checkBox1:Text = "Drink Type 1".
-        THIS-OBJECT:checkBox1:UseCompatibleTextRendering = TRUE.
-        THIS-OBJECT:checkBox1:UseVisualStyleBackColor = TRUE.
-        THIS-OBJECT:checkBox1:CheckedChanged:Subscribe(THIS-OBJECT:checkBox1_CheckedChanged).
+        THIS-OBJECT:checkedListBox1:FormattingEnabled = TRUE.
+        THIS-OBJECT:checkedListBox1:Location = NEW System.Drawing.Point(336, 26).
+        THIS-OBJECT:checkedListBox1:Name = "checkedListBox1".
+        THIS-OBJECT:checkedListBox1:Size = NEW System.Drawing.Size(120, 94).
+        THIS-OBJECT:checkedListBox1:TabIndex = 33.
+        THIS-OBJECT:checkedListBox1:UseCompatibleTextRendering = TRUE.
+        THIS-OBJECT:checkedListBox1:SelectedIndexChanged:Subscribe(THIS-OBJECT:checkedListBox1_SelectedIndexChanged).
         /*  */
-        /* checkBox2 */
+        /* listBox1 */
         /*  */
-        THIS-OBJECT:checkBox2:Location = NEW System.Drawing.Point(338, 62).
-        THIS-OBJECT:checkBox2:Name = "checkBox2".
-        THIS-OBJECT:checkBox2:Size = NEW System.Drawing.Size(104, 24).
-        THIS-OBJECT:checkBox2:TabIndex = 5.
-        THIS-OBJECT:checkBox2:Text = "Drink Type 2".
-        THIS-OBJECT:checkBox2:UseCompatibleTextRendering = TRUE.
-        THIS-OBJECT:checkBox2:UseVisualStyleBackColor = TRUE.
-        THIS-OBJECT:checkBox2:CheckedChanged:Subscribe(THIS-OBJECT:checkBox2_CheckedChanged).
+        THIS-OBJECT:listBox1:FormattingEnabled = TRUE.
+        THIS-OBJECT:listBox1:Location = NEW System.Drawing.Point(286, 194).
+        THIS-OBJECT:listBox1:Name = "listBox1".
+        THIS-OBJECT:listBox1:Size = NEW System.Drawing.Size(120, 95).
+        THIS-OBJECT:listBox1:TabIndex = 34.
+        THIS-OBJECT:listBox1:SelectedIndexChanged:Subscribe(THIS-OBJECT:listBox1_SelectedIndexChanged).
         /*  */
-        /* checkBox3 */
+        /* button2 */
         /*  */
-        THIS-OBJECT:checkBox3:Location = NEW System.Drawing.Point(338, 109).
-        THIS-OBJECT:checkBox3:Name = "checkBox3".
-        THIS-OBJECT:checkBox3:Size = NEW System.Drawing.Size(104, 24).
-        THIS-OBJECT:checkBox3:TabIndex = 6.
-        THIS-OBJECT:checkBox3:Text = "Drink Type 3".
-        THIS-OBJECT:checkBox3:UseCompatibleTextRendering = TRUE.
-        THIS-OBJECT:checkBox3:UseVisualStyleBackColor = TRUE.
-        THIS-OBJECT:checkBox3:CheckedChanged:Subscribe(THIS-OBJECT:checkBox3_CheckedChanged).
+        THIS-OBJECT:button2:Location = NEW System.Drawing.Point(193, 194).
+        THIS-OBJECT:button2:Name = "button2".
+        THIS-OBJECT:button2:Size = NEW System.Drawing.Size(75, 38).
+        THIS-OBJECT:button2:TabIndex = 35.
+        THIS-OBJECT:button2:Text = "Show Locations".
+        THIS-OBJECT:button2:UseCompatibleTextRendering = TRUE.
+        THIS-OBJECT:button2:UseVisualStyleBackColor = TRUE.
+        THIS-OBJECT:button2:Click:Subscribe(THIS-OBJECT:button2_Click).
+        /*  */
+        /* button3 */
+        /*  */
+        THIS-OBJECT:button3:Location = NEW System.Drawing.Point(193, 252).
+        THIS-OBJECT:button3:Name = "button3".
+        THIS-OBJECT:button3:Size = NEW System.Drawing.Size(75, 37).
+        THIS-OBJECT:button3:TabIndex = 36.
+        THIS-OBJECT:button3:Text = "Show Beverages".
+        THIS-OBJECT:button3:UseCompatibleTextRendering = TRUE.
+        THIS-OBJECT:button3:UseVisualStyleBackColor = TRUE.
+        THIS-OBJECT:button3:Click:Subscribe(THIS-OBJECT:button3_Click).
+        /*  */
+        /* listBox2 */
+        /*  */
+        THIS-OBJECT:listBox2:FormattingEnabled = TRUE.
+        THIS-OBJECT:listBox2:Location = NEW System.Drawing.Point(433, 194).
+        THIS-OBJECT:listBox2:Name = "listBox2".
+        THIS-OBJECT:listBox2:Size = NEW System.Drawing.Size(120, 95).
+        THIS-OBJECT:listBox2:TabIndex = 37.
+        /*  */
+        /* numericUpDown1 */
+        /*  */
+        THIS-OBJECT:numericUpDown1:DecimalPlaces = 2.
+        THIS-OBJECT:numericUpDown1:Location = NEW System.Drawing.Point(79, 29).
+        THIS-OBJECT:numericUpDown1:Name = "numericUpDown1".
+        THIS-OBJECT:numericUpDown1:Size = NEW System.Drawing.Size(120, 20).
+        THIS-OBJECT:numericUpDown1:TabIndex = 38.
         /*  */
         /* NoWasterUI */
         /*  */
-        THIS-OBJECT:ClientSize = NEW System.Drawing.Size(546, 356).
-        THIS-OBJECT:Controls:Add(THIS-OBJECT:checkBox3).
-        THIS-OBJECT:Controls:Add(THIS-OBJECT:checkBox2).
-        THIS-OBJECT:Controls:Add(THIS-OBJECT:checkBox1).
+        THIS-OBJECT:ClientSize = NEW System.Drawing.Size(657, 405).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:numericUpDown1).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:listBox2).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:button3).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:button2).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:listBox1).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:checkedListBox1).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:label2).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:button1).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:label1).
-        THIS-OBJECT:Controls:Add(THIS-OBJECT:textBox1).
         THIS-OBJECT:Name = "NoWasterUI".
-        THIS-OBJECT:Text = "NoWasterUI".
+        THIS-OBJECT:Text = "NoWaster".
+        THIS-OBJECT:Load:Subscribe(THIS-OBJECT:NoWasterUI_Load).
+        CAST(THIS-OBJECT:numericUpDown1, System.ComponentModel.ISupportInitialize):EndInit().
         THIS-OBJECT:ResumeLayout(FALSE).
-        THIS-OBJECT:PerformLayout().
         CATCH e AS Progress.Lang.Error:
             UNDO, THROW e.
         END CATCH.
     END METHOD.
+
 
 	/*------------------------------------------------------------------------------
 	 Purpose:
@@ -212,16 +388,21 @@ CLASS UI.NoWasterUI INHERITS Form:
 
 	END METHOD.
 
+
+
+
+
 	/*------------------------------------------------------------------------------
 	 Purpose:
 	 Notes:
 	------------------------------------------------------------------------------*/
 	@VisualDesigner.
-	METHOD PRIVATE VOID textBox1_TextChanged( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+	METHOD PRIVATE VOID NoWasterUI_Load( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
 		
 		RETURN.
 
 	END METHOD.
+
 
     DESTRUCTOR PUBLIC NoWasterUI ( ):
 

@@ -18,6 +18,7 @@ CLASS DA.DAMenuForLocations INHERITS BaseDataAccess:
     {datasets/dsMenuForLocations.i &REFERENCE-ONLY=REFERENCE-ONLY}  
     
     method public void fetchData(input-output dataset dsMenuForLocations):
+        dataset dsMenuForLocations:EMPTY-DATASET ().
         def var hDS as handle.
         define var hSrc as handle no-undo.
         define var hSrc2 as handle no-undo.
@@ -46,10 +47,7 @@ CLASS DA.DAMenuForLocations INHERITS BaseDataAccess:
         create ttMenuForLocation.
         ttMenuForLocation.BeverageID = ttMenu.BeverageID.
         ttMenuForLocation.LocationID = ttMenu.LocationID.
-        ttMenuForLocation.Name = ttBeverages.Name.
         ttMenuForLocation.Price = ttMenu.Price.
-        ttMenuForLocation.Size = ttBeverages.Size.
-        ttMenuForLocation.Alcohol = ttBeverages.Alcohol.
         ttmenuForLocation.UnitsOfAlcohol = ttBeverages.Size * (ttBeverages.Alcohol / 100) * 100.
     end method.
     

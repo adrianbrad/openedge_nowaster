@@ -65,4 +65,9 @@ CLASS BE.BELocations:
         
         return false.
     end method.
+    
+    method public handle getDShandle():
+        return dataset DSLocations:handle.
+    end method.
+    
 END CLASS.

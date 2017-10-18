@@ -32,6 +32,24 @@ CLASS BE.BEBeverages:
         DA:storeData(input dataset dsBeverages by-reference).
     end method.
     
+    method public decimal getBevSize(input id as int):
+        find first ttBeverages where beverageID = id no-error.
+            if available ttBeverages then
+                return ttBeverages.Size.
+    end method.
+    
+    method public decimal getAlcohol(input id as int):
+        find first ttBeverages where beverageID = id no-error.
+            if available ttBeverages then
+                return ttBeverages.Alcohol.
+    end method.
+    
+    method public decimal getType(input id as int):
+        find first ttBeverages where beverageID = id no-error.
+            if available ttBeverages then
+                return ttBeverages.TypeNum.
+    end method.
+        
     method public handle getBeverages():
         for each ttBeverages:
             disp ttBeverages.BeverageID.

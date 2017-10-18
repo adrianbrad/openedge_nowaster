@@ -65,7 +65,7 @@ CLASS DA.BaseDataAccess ABSTRACT:
     end method.
     
     method protected void attachDataSource(INPUT-OUTPUT dataset-handle hdsDynamic, input src as handle, input numOfBuffer as int):
-        disp hdsDynamic:get-buffer-handle(1):name.
+/*        disp hdsDynamic:get-buffer-handle(1):name.*/
         hdsDynamic:get-buffer-handle(numOfBuffer):attach-data-source (src).
     end method.
     

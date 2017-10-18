@@ -9,7 +9,11 @@ def var be4 as BE.BEMenuForLocation.
 /*be3 = new BE.BEMenu().     */
 be4 = new BE.BEMenuForLocation().
 
-be4:fetchData().
+/*be4:getMostAlcoholUnitsWithAvailableMoney(50).*/
 /*be2:getBeverages().*/
 
 /*new BT.BTGetMostAlcoholUnitsWithMoney().*/
+
+for each beverages:
+    disp Beverages.Type.
+    
