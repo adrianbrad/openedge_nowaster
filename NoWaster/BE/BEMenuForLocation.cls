@@ -25,7 +25,7 @@ CLASS BE.BEMenuForLocation:
         DA:fetchData(input-output dataset dsMenuForLocations by-reference).
     end method.
     
-    method public char getMostAlcoholUnitsWithAvailableMoney(input money as decimal, input availableDrinks as char):
+    method public char getMostAlcoholUnitsWithAvailableMoney(input money as decimal, input availableDrinks as char, input iLocID as int):
         fetchData().
         def var locID as int no-undo.
         def var bevID as int no-undo.
@@ -39,18 +39,30 @@ CLASS BE.BEMenuForLocation:
         def var maxDrinksCount as int.
         drinkOk = false.
         totalMoney = 0.
-        
         for each ttMenuForLocation no-lock:
+            if price = 0 then return "You have a beverage with a 0 price, please fix".
+            
+            if availableDrinks <> "" then
             do i = 1 to num-entries(availableDrinks):
                 find first ttBeverages where ttBeverages.BEverageID = ttMenuForLocation.BEverageID.
                     if ttBEverages.TypeNum = int(entry(i, availableDrinks)) then do:
-                        drinkOk = true.
+                        if iLocID <> ? then do:
+                            if ttMenuForLocation.LocationID = iLocID then
+                                drinkOk = true.
+                        end.
+                        else
+                            drinkOk = true.
+                            
                         leave.
                     end.
-            end.
-            
-/*            disp ttMenuForLocation.BeverageID ttBeverages.TypeNum drinkOk.*/
-            
+            end.  
+            else do:
+                if iLocID = ? then
+                    drinkOk = true. 
+                    
+                else if iLocID = ttMenuForLocation.LocationID then 
+                    drinkOk = true.
+            end.        
             if drinkOk = true then do:
                 do while totalMoney + price < money:
                     totalMoney = totalMoney + ttMenuForLocation.Price.
@@ -70,7 +82,7 @@ CLASS BE.BEMenuForLocation:
                 drinkOk = false.
              end.
         end.
-            disp maxMoney locID bevID maxPoints maxDrinksCount.
+            return string(locID) + "," +  string(maxDrinksCount) + "," +  string(bevID) + "," + string(maxMoney) + "," +  string(maxPoints).
     end method.
     
     method public char getBeverageName(input id as int):

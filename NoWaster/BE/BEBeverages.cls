@@ -38,6 +38,12 @@ CLASS BE.BEBeverages:
                 return ttBeverages.Size.
     end method.
     
+    method public char getBevName(input id as int):
+        find first ttBeverages where beverageID = id no-error.
+            if available ttBeverages then
+                return ttBeverages.Name.
+    end method.
+    
     method public decimal getAlcohol(input id as int):
         find first ttBeverages where beverageID = id no-error.
             if available ttBeverages then

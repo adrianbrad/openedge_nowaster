@@ -66,6 +66,12 @@ CLASS BE.BEDrinkType:
         return false.
     end method.
     
+    method public char getDrinkType(input ID as int):
+        find first ttDrinkType where ttDrinkType.typeNum = id no-error.
+            if available ttDrinkType then
+                return ttDrinkType.TypeName.
+    end method.
+    
     method public handle getDShandle():
         return dataset dsDrinkType:handle.
     end method.

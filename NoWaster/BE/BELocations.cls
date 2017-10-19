@@ -70,4 +70,9 @@ CLASS BE.BELocations:
         return dataset DSLocations:handle.
     end method.
     
+    method public char getLocName(input id as int):
+        find first ttLocations where ttLocations.LocationID = id.
+            return ttLocations.Name.
+    end method.
+    
 END CLASS.
