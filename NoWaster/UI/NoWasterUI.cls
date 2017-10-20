@@ -25,14 +25,17 @@ CLASS UI.NoWasterUI INHERITS Form:
     DEFINE PRIVATE VARIABLE label5 AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE label6 AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE label7 AS System.Windows.Forms.Label NO-UNDO.
+    DEFINE PRIVATE VARIABLE label8 AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE listBox1 AS System.Windows.Forms.ListBox NO-UNDO.
     DEFINE PRIVATE VARIABLE listBox2 AS System.Windows.Forms.ListBox NO-UNDO.
     DEFINE PRIVATE VARIABLE listBox3 AS System.Windows.Forms.ListBox NO-UNDO.
     DEFINE PRIVATE VARIABLE numericUpDown1 AS System.Windows.Forms.NumericUpDown NO-UNDO.
     DEFINE PRIVATE VARIABLE label1 AS System.Windows.Forms.Label NO-UNDO.
     def private var locClick as logical no-undo initial false.
+    DEFINE PRIVATE VARIABLE pictureBox1 AS System.Windows.Forms.PictureBox NO-UNDO.
     DEFINE PRIVATE VARIABLE textBox1 AS System.Windows.Forms.TextBox NO-UNDO.
     DEFINE PRIVATE VARIABLE textBox2 AS System.Windows.Forms.TextBox NO-UNDO.
+    DEFINE PRIVATE VARIABLE textBox3 AS System.Windows.Forms.TextBox NO-UNDO.
         
     CONSTRUCTOR PUBLIC NoWasterUI (  ):
         
@@ -104,6 +107,26 @@ CLASS UI.NoWasterUI INHERITS Form:
 		
 	   showBeverageInformation(cast(listBox2:SelectedItem, UI.ListBoxData):id).
 
+	END METHOD.
+
+	/*------------------------------------------------------------------------------
+	 Purpose:
+	 Notes:
+	------------------------------------------------------------------------------*/
+	@VisualDesigner.
+	METHOD PRIVATE VOID listBox3_SelectedIndexChanged( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+	    def var beMFL as BE.BEMenuForLocation no-undo.
+	    def var beLoc as BE.BELocations no-undo.
+	    beLoc = new BE.Belocations().
+        beLoc:fetchData().
+        beMFL = new BE.BEMenuForLocation().
+        beMFL:fetchData().
+
+	   def var result as char no-undo.
+	   if listBox1:SelectedItem <> ? and listBox1:SelectedItem:GetType():ToString() = "UI.ListBoxData" and listBox3:SelectedItem <> ? then do:
+            result = beMFL:getMostAlcoholUnitsWithAvailableMoney(NumericUpDown1:Value, "", cast(listBOx1:SelectedItem, UI.ListBoxData):id, cast(listBOx3:SelectedItem, UI.ListBoxData):id).
+            handleResult(result, beLoc, beMFL).
+       end.
 	END METHOD.
 
     method private void loadBeverages(input whereString as char):
@@ -287,40 +310,50 @@ CLASS UI.NoWasterUI INHERITS Form:
         def var result as char no-undo.
         def var resultString as char.
         if listBox1:SelectedItem <> ? and listBox1:SelectedItem:GetType():ToString() = "UI.ListBoxData" then
-            result = be4:getMostAlcoholUnitsWithAvailableMoney(NumericUpDown1:Value, availableDrinks, cast(listBOx1:SelectedItem, UI.ListBoxData):id).
+            result = be4:getMostAlcoholUnitsWithAvailableMoney(NumericUpDown1:Value, availableDrinks, cast(listBOx1:SelectedItem, UI.ListBoxData):id, ?).
         else
-            result = be4:getMostAlcoholUnitsWithAvailableMoney(NumericUpDown1:Value, availableDrinks, ?).
+            result = be4:getMostAlcoholUnitsWithAvailableMoney(NumericUpDown1:Value, availableDrinks, ?, ?).
         def var beLoc as BE.BELocations.
         def var beBev as BE.BEBeverages.
         beLoc = new BE.Belocations().
         beBev = new BE.BEBeverages().
         beLoc:fetchData().
         beBev:fetchData(?).
-        if(num-entries(result) = 5) then do:
-            do i=1 to num-entries(result):
-                case i:
-                    when 1 then do:
-                        resultString = "You can drink in " + beLoc:getLocName(int(entry(i, result))).
-                    end.
-
-                    when 2 then do:
-                        resultString = resultString + " " + (entry(i, result)).
-                    end.
-
-                    when 3 then do:
-                        resultString = resultString + " " + be4:getBeverageName(int(entry(i, result))).
-                    end.
-                    when 4 then do:
-                        resultString = resultString + " with " + (entry(i, result)) + " lei".
-                    end.
-                end case.
-            end.
+        handleResult(result, beLoc, be4).
+	END METHOD.
+	
+	method private char handleResult(input result as char, input beLoc as BE.BELocations, input be4 as BE.BEMenuForLocation):
+	def var resultString as char no-undo.
+	def var i as int no-undo.
+	if(num-entries(result) = 5) then do:
+            if entry(1, result) = "0" then 
+                resultString = "No drinks found".
+            else
+                do i=1 to num-entries(result):
+                    case i:
+                        when 1 then do:
+                            resultString = "You can drink in " + beLoc:getLocName(int(entry(i, result))).
+                        end.
+    
+                        when 2 then do:
+                            resultString = resultString + " " + (entry(i, result)).
+                        end.
+    
+                        when 3 then do:
+                            resultString = resultString + " " + be4:getBeverageName(int(entry(i, result))).
+                        end.
+                        when 4 then do:
+                            resultString = resultString + " with " + (entry(i, result)) + " lei".
+                        end.
+                    end case.
+                end.
         end.
             else do:
                resultString = result.
             end.
         textBox2:Text = resultString.
-	END METHOD.
+        textBox3:Text = entry(5, result).
+	end method.
 
 
 
@@ -344,6 +377,9 @@ CLASS UI.NoWasterUI INHERITS Form:
         Visual Designer to avoid any incompatible modifications.
         
         Modifying the contents of this method using a code editor will invalidate any support for this file. */
+        @VisualDesigner.FormMember (NeedsInitialize="true").
+        DEFINE VARIABLE resources AS Progress.Util.ResourceManager NO-UNDO.
+        resources = NEW Progress.Util.ResourceManager("UI.NoWasterUI").
         THIS-OBJECT:label1 = NEW System.Windows.Forms.Label().
         THIS-OBJECT:button1 = NEW System.Windows.Forms.Button().
         THIS-OBJECT:label2 = NEW System.Windows.Forms.Label().
@@ -359,12 +395,16 @@ CLASS UI.NoWasterUI INHERITS Form:
         THIS-OBJECT:label6 = NEW System.Windows.Forms.Label().
         THIS-OBJECT:label7 = NEW System.Windows.Forms.Label().
         THIS-OBJECT:textBox2 = NEW System.Windows.Forms.TextBox().
+        THIS-OBJECT:pictureBox1 = NEW System.Windows.Forms.PictureBox().
+        THIS-OBJECT:textBox3 = NEW System.Windows.Forms.TextBox().
+        THIS-OBJECT:label8 = NEW System.Windows.Forms.Label().
         CAST(THIS-OBJECT:numericUpDown1, System.ComponentModel.ISupportInitialize):BeginInit().
+        CAST(THIS-OBJECT:pictureBox1, System.ComponentModel.ISupportInitialize):BeginInit().
         THIS-OBJECT:SuspendLayout().
         /*  */
         /* label1 */
         /*  */
-        THIS-OBJECT:label1:Location = NEW System.Drawing.Point(28, 26).
+        THIS-OBJECT:label1:Location = NEW System.Drawing.Point(28, 89).
         THIS-OBJECT:label1:Name = "label1".
         THIS-OBJECT:label1:Size = NEW System.Drawing.Size(51, 23).
         THIS-OBJECT:label1:TabIndex = 1.
@@ -374,7 +414,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /*  */
         /* button1 */
         /*  */
-        THIS-OBJECT:button1:Location = NEW System.Drawing.Point(205, 26).
+        THIS-OBJECT:button1:Location = NEW System.Drawing.Point(216, 86).
         THIS-OBJECT:button1:Name = "button1".
         THIS-OBJECT:button1:Size = NEW System.Drawing.Size(109, 75).
         THIS-OBJECT:button1:TabIndex = 2.
@@ -385,9 +425,9 @@ CLASS UI.NoWasterUI INHERITS Form:
         /*  */
         /* label2 */
         /*  */
-        THIS-OBJECT:label2:Location = NEW System.Drawing.Point(356, 9).
+        THIS-OBJECT:label2:Location = NEW System.Drawing.Point(376, 12).
         THIS-OBJECT:label2:Name = "label2".
-        THIS-OBJECT:label2:Size = NEW System.Drawing.Size(100, 23).
+        THIS-OBJECT:label2:Size = NEW System.Drawing.Size(74, 23).
         THIS-OBJECT:label2:TabIndex = 3.
         THIS-OBJECT:label2:Text = "Type of drink".
         THIS-OBJECT:label2:UseCompatibleTextRendering = TRUE.
@@ -396,7 +436,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /* checkedListBox1 */
         /*  */
         THIS-OBJECT:checkedListBox1:FormattingEnabled = TRUE.
-        THIS-OBJECT:checkedListBox1:Location = NEW System.Drawing.Point(336, 26).
+        THIS-OBJECT:checkedListBox1:Location = NEW System.Drawing.Point(356, 27).
         THIS-OBJECT:checkedListBox1:Name = "checkedListBox1".
         THIS-OBJECT:checkedListBox1:Size = NEW System.Drawing.Size(120, 94).
         THIS-OBJECT:checkedListBox1:TabIndex = 33.
@@ -407,7 +447,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /* listBox1 */
         /*  */
         THIS-OBJECT:listBox1:FormattingEnabled = TRUE.
-        THIS-OBJECT:listBox1:Location = NEW System.Drawing.Point(45, 180).
+        THIS-OBJECT:listBox1:Location = NEW System.Drawing.Point(45, 227).
         THIS-OBJECT:listBox1:Name = "listBox1".
         THIS-OBJECT:listBox1:Size = NEW System.Drawing.Size(120, 95).
         THIS-OBJECT:listBox1:TabIndex = 34.
@@ -416,7 +456,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /* listBox2 */
         /*  */
         THIS-OBJECT:listBox2:FormattingEnabled = TRUE.
-        THIS-OBJECT:listBox2:Location = NEW System.Drawing.Point(205, 180).
+        THIS-OBJECT:listBox2:Location = NEW System.Drawing.Point(356, 227).
         THIS-OBJECT:listBox2:Name = "listBox2".
         THIS-OBJECT:listBox2:Size = NEW System.Drawing.Size(120, 95).
         THIS-OBJECT:listBox2:TabIndex = 37.
@@ -425,7 +465,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /* numericUpDown1 */
         /*  */
         THIS-OBJECT:numericUpDown1:DecimalPlaces = 2.
-        THIS-OBJECT:numericUpDown1:Location = NEW System.Drawing.Point(79, 29).
+        THIS-OBJECT:numericUpDown1:Location = NEW System.Drawing.Point(79, 92).
         THIS-OBJECT:numericUpDown1:Name = "numericUpDown1".
         THIS-OBJECT:numericUpDown1:Size = NEW System.Drawing.Size(120, 20).
         THIS-OBJECT:numericUpDown1:TabIndex = 38.
@@ -439,7 +479,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /*  */
         /* label3 */
         /*  */
-        THIS-OBJECT:label3:Location = NEW System.Drawing.Point(79, 154).
+        THIS-OBJECT:label3:Location = NEW System.Drawing.Point(79, 199).
         THIS-OBJECT:label3:Name = "label3".
         THIS-OBJECT:label3:Size = NEW System.Drawing.Size(54, 23).
         THIS-OBJECT:label3:TabIndex = 39.
@@ -449,7 +489,7 @@ CLASS UI.NoWasterUI INHERITS Form:
         /*  */
         /* label4 */
         /*  */
-        THIS-OBJECT:label4:Location = NEW System.Drawing.Point(229, 154).
+        THIS-OBJECT:label4:Location = NEW System.Drawing.Point(384, 199).
         THIS-OBJECT:label4:Name = "label4".
         THIS-OBJECT:label4:Size = NEW System.Drawing.Size(66, 23).
         THIS-OBJECT:label4:TabIndex = 40.
@@ -459,41 +499,43 @@ CLASS UI.NoWasterUI INHERITS Form:
         /* listBox3 */
         /*  */
         THIS-OBJECT:listBox3:FormattingEnabled = TRUE.
-        THIS-OBJECT:listBox3:Location = NEW System.Drawing.Point(45, 298).
+        THIS-OBJECT:listBox3:Location = NEW System.Drawing.Point(205, 225).
         THIS-OBJECT:listBox3:Name = "listBox3".
         THIS-OBJECT:listBox3:Size = NEW System.Drawing.Size(120, 95).
         THIS-OBJECT:listBox3:TabIndex = 41.
+        THIS-OBJECT:listBox3:SelectedIndexChanged:Subscribe(THIS-OBJECT:listBox3_SelectedIndexChanged).
         /*  */
         /* label5 */
         /*  */
-        THIS-OBJECT:label5:Location = NEW System.Drawing.Point(88, 280).
+        THIS-OBJECT:label5:Location = NEW System.Drawing.Point(232, 190).
         THIS-OBJECT:label5:Name = "label5".
-        THIS-OBJECT:label5:Size = NEW System.Drawing.Size(35, 15).
+        THIS-OBJECT:label5:Size = NEW System.Drawing.Size(67, 32).
         THIS-OBJECT:label5:TabIndex = 42.
-        THIS-OBJECT:label5:Text = "Menu".
+        THIS-OBJECT:label5:Text = "Menu Drink / Price".
+        THIS-OBJECT:label5:TextAlign = System.Drawing.ContentAlignment:TopCenter.
         THIS-OBJECT:label5:UseCompatibleTextRendering = TRUE.
         /*  */
         /* textBox1 */
         /*  */
-        THIS-OBJECT:textBox1:Location = NEW System.Drawing.Point(336, 180).
+        THIS-OBJECT:textBox1:Location = NEW System.Drawing.Point(294, 351).
         THIS-OBJECT:textBox1:Name = "textBox1".
         THIS-OBJECT:textBox1:ReadOnly = TRUE.
         THIS-OBJECT:textBox1:Size = NEW System.Drawing.Size(251, 20).
         THIS-OBJECT:textBox1:TabIndex = 43.
-        THIS-OBJECT:textBox1:autoSize = true.
         /*  */
         /* label6 */
         /*  */
-        THIS-OBJECT:label6:Location = NEW System.Drawing.Point(345, 154).
+        THIS-OBJECT:label6:Location = NEW System.Drawing.Point(356, 328).
         THIS-OBJECT:label6:Name = "label6".
         THIS-OBJECT:label6:Size = NEW System.Drawing.Size(120, 23).
         THIS-OBJECT:label6:TabIndex = 44.
         THIS-OBJECT:label6:Text = "Beverage Information".
+        THIS-OBJECT:label6:TextAlign = System.Drawing.ContentAlignment:TopCenter.
         THIS-OBJECT:label6:UseCompatibleTextRendering = TRUE.
         /*  */
         /* label7 */
         /*  */
-        THIS-OBJECT:label7:Location = NEW System.Drawing.Point(45, 77).
+        THIS-OBJECT:label7:Location = NEW System.Drawing.Point(45, 140).
         THIS-OBJECT:label7:Name = "label7".
         THIS-OBJECT:label7:Size = NEW System.Drawing.Size(143, 23).
         THIS-OBJECT:label7:TabIndex = 45.
@@ -503,15 +545,45 @@ CLASS UI.NoWasterUI INHERITS Form:
         /*  */
         /* textBox2 */
         /*  */
-        THIS-OBJECT:textBox2:Location = NEW System.Drawing.Point(45, 104).
+        THIS-OBJECT:textBox2:Location = NEW System.Drawing.Point(45, 167).
         THIS-OBJECT:textBox2:Name = "textBox2".
         THIS-OBJECT:textBox2:ReadOnly = TRUE.
-        THIS-OBJECT:textBox2:Size = NEW System.Drawing.Size(217, 20).
+        THIS-OBJECT:textBox2:Size = NEW System.Drawing.Size(280, 20).
         THIS-OBJECT:textBox2:TabIndex = 46.
+        /*  */
+        /* pictureBox1 */
+        /*  */
+        THIS-OBJECT:pictureBox1:Image = CAST(resources:GetObject("pictureBox1.Image"), System.Drawing.Image).
+        THIS-OBJECT:pictureBox1:Location = NEW System.Drawing.Point(12, 12).
+        THIS-OBJECT:pictureBox1:Name = "pictureBox1".
+        THIS-OBJECT:pictureBox1:Size = NEW System.Drawing.Size(302, 50).
+        THIS-OBJECT:pictureBox1:TabIndex = 47.
+        THIS-OBJECT:pictureBox1:TabStop = FALSE.
+        /*  */
+        /* textBox3 */
+        /*  */
+        THIS-OBJECT:textBox3:Location = NEW System.Drawing.Point(356, 167).
+        THIS-OBJECT:textBox3:Name = "textBox3".
+        THIS-OBJECT:textBox3:ReadOnly = TRUE.
+        THIS-OBJECT:textBox3:Size = NEW System.Drawing.Size(100, 20).
+        THIS-OBJECT:textBox3:TabIndex = 48.
+        /*  */
+        /* label8 */
+        /*  */
+        THIS-OBJECT:label8:Location = NEW System.Drawing.Point(388, 140).
+        THIS-OBJECT:label8:Name = "label8".
+        THIS-OBJECT:label8:Size = NEW System.Drawing.Size(37, 21).
+        THIS-OBJECT:label8:TabIndex = 49.
+        THIS-OBJECT:label8:Text = "Points".
+        THIS-OBJECT:label8:TextAlign = System.Drawing.ContentAlignment:TopCenter.
+        THIS-OBJECT:label8:UseCompatibleTextRendering = TRUE.
         /*  */
         /* NoWasterUI */
         /*  */
-        THIS-OBJECT:ClientSize = NEW System.Drawing.Size(657, 405).
+        THIS-OBJECT:ClientSize = NEW System.Drawing.Size(657, 377).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:label8).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:textBox3).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:pictureBox1).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:textBox2).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:label7).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:label6).
@@ -527,10 +599,12 @@ CLASS UI.NoWasterUI INHERITS Form:
         THIS-OBJECT:Controls:Add(THIS-OBJECT:label2).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:button1).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:label1).
+        THIS-OBJECT:Icon = CAST(resources:GetObject("$this.Icon"), System.Drawing.Icon).
         THIS-OBJECT:Name = "NoWasterUI".
         THIS-OBJECT:Text = "NoWaster".
         THIS-OBJECT:Load:Subscribe(THIS-OBJECT:NoWasterUI_Load).
         CAST(THIS-OBJECT:numericUpDown1, System.ComponentModel.ISupportInitialize):EndInit().
+        CAST(THIS-OBJECT:pictureBox1, System.ComponentModel.ISupportInitialize):EndInit().
         THIS-OBJECT:ResumeLayout(FALSE).
         THIS-OBJECT:PerformLayout().
         CATCH e AS Progress.Lang.Error:

@@ -25,46 +25,38 @@ CLASS BE.BEMenuForLocation:
         DA:fetchData(input-output dataset dsMenuForLocations by-reference).
     end method.
     
-    method public char getMostAlcoholUnitsWithAvailableMoney(input money as decimal, input availableDrinks as char, input iLocID as int):
+    method public char getMostAlcoholUnitsWithAvailableMoney(input money as decimal, input availableDrinksType as char, input iLocID as int, input iBevID as int):
         fetchData().
-        def var locID as int no-undo.
-        def var bevID as int no-undo.
-        def var totalMoney as decimal no-undo.
-        def var maxMoney as decimal no-undo.
-        def var pointsSum as decimal no-undo.
-        def var maxPoints as decimal no-undo.
-        def var i as int no-undo.
-        def var drinkOk as logical.
-        def var drinksCount as int initial 0.
-        def var maxDrinksCount as int.
-        drinkOk = false.
-        totalMoney = 0.
+        def var locID               as int no-undo.
+        def var bevID               as int no-undo.
+        def var totalMoney          as decimal no-undo initial 0.
+        def var maxMoney            as decimal no-undo.
+        def var pointsSum           as decimal no-undo.
+        def var maxPoints           as decimal no-undo.
+        def var i                   as  int no-undo.
+        def var drinkOk             as logical no-undo initial false.
+        def var drinksCount         as int no-undo initial 0.
+        def var maxDrinksCount      as int no-undo.
+
+        
         for each ttMenuForLocation no-lock:
             if price = 0 then return "You have a beverage with a 0 price, please fix".
-            
-            if availableDrinks <> "" then
-            do i = 1 to num-entries(availableDrinks):
-                find first ttBeverages where ttBeverages.BEverageID = ttMenuForLocation.BEverageID.
-                    if ttBEverages.TypeNum = int(entry(i, availableDrinks)) then do:
-                        if iLocID <> ? then do:
-                            if ttMenuForLocation.LocationID = iLocID then
-                                drinkOk = true.
-                        end.
-                        else
-                            drinkOk = true.
-                            
-                        leave.
-                    end.
+            if availableDrinksType <> "" then
+            do i = 1 to num-entries(availableDrinksType):
+                find first ttBeverages where ttBeverages.BEverageID = ttMenuForLocation.BEverageID no-error.
+                        if ttBEverages.TypeNum = int(entry(i, availableDrinksType)) then
+                            if (iLocID <> ? and ttMenuForLocation.LocationID = iLocID) or iLocID = ? then
+                                    drinkOk = true.
+                                    leave.
             end.  
             else do:
-                if iLocID = ? then
+                if (iLocID = ? and iBevID = ?) or (iLocID = ttMenuForLocation.LocationID and iBevID = ?) or
+                (iBevID = ttMenuForLocation.BeverageID and iLocID = ttMenuForLocation.LocationID) then
                     drinkOk = true. 
-                    
-                else if iLocID = ttMenuForLocation.LocationID then 
-                    drinkOk = true.
             end.        
+            
             if drinkOk = true then do:
-                do while totalMoney + price < money:
+                do while totalMoney + price <= money:
                     totalMoney = totalMoney + ttMenuForLocation.Price.
                     pointsSum = pointsSum + UnitsOfAlcohol.
                     drinksCount = drinksCount + 1.
@@ -91,13 +83,7 @@ CLASS BE.BEMenuForLocation:
             return ttBeverages.name.
         return ?.
     end method.
-    
-/*    method public char getBeveragePrice(input id as int):             */
-/*                find first ttBeverages where BeverageID = id no-error.*/
-/*            if available ttBeverages then                             */
-/*            return ttBeverages.price.                                 */
-/*        return ?.                                                     */
-/*    end method.*/
+
     
     method public handle getDsHandle():
         return dataset dsMenuForLocations:handle.

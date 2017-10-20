@@ -262,7 +262,7 @@ CLASS UI.NoWasterCrud INHERITS Form:
         THIS-OBJECT:Controls:Add(THIS-OBJECT:label1).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:listBox1).
         THIS-OBJECT:Name = "NoWasterCrud".
-        THIS-OBJECT:Text = "NoWasterCrud".
+        THIS-OBJECT:Text = "NoWasterMenuUpdate".
         CAST(THIS-OBJECT:numericUpDown1, System.ComponentModel.ISupportInitialize):EndInit().
         THIS-OBJECT:ResumeLayout(FALSE).
         CATCH e AS Progress.Lang.Error:
